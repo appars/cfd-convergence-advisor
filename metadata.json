@@ -1,0 +1,5 @@
+{
+  "name": "CFD Convergence Advisor",
+  "description": "An AI-powered assistant to assess the convergence likelihood of your CFD simulation setup, providing potential issues, recommendations, and an actionable checklist.",
+  "requestFramePermissions": []
+}
