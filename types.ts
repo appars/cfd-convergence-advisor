@@ -18,8 +18,14 @@ export interface SimulationSetup {
   geometry: string;
   velocity: string;
   density: string;
+  viscosity: string;
+  characteristicLength: string;
   turbulenceModel: string;
+  customTurbulenceModel?: string;
   meshDetails: string;
+  yPlus: string;
+  numerics: string;
+  domainExtents: string;
 }
 
 export const TURBULENCE_MODELS = [

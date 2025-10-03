@@ -11,8 +11,14 @@ const initialSetup: SimulationSetup = {
     geometry: '',
     velocity: '',
     density: '998.2', // default to water density kg/m^3
+    viscosity: '0.001002', // default to water viscosity Pa.s
+    characteristicLength: '',
     turbulenceModel: TURBULENCE_MODELS[1], // k-omega SST is a common, robust choice
+    customTurbulenceModel: '',
     meshDetails: '',
+    yPlus: '',
+    numerics: '',
+    domainExtents: '',
 };
 
 function App() {
@@ -26,20 +32,43 @@ function App() {
     };
 
     const handleAnalyzeClick = async () => {
-        if (!setup.geometry.trim() || !setup.velocity.trim()) return;
+        if (!setup.geometry.trim() || !setup.velocity.trim() || !setup.characteristicLength.trim()) return;
+        if (setup.turbulenceModel === 'Other' && !setup.customTurbulenceModel?.trim()) return;
 
         setIsLoading(true);
         setError(null);
         setAssessment(null);
 
+        // Reynolds number calculation
+        let reynoldsNumberText = 'Not calculated (missing inputs).';
+        const rho = parseFloat(setup.density);
+        const V = parseFloat(setup.velocity);
+        const L = parseFloat(setup.characteristicLength);
+        const mu = parseFloat(setup.viscosity);
+
+        if (!isNaN(rho) && !isNaN(V) && !isNaN(L) && !isNaN(mu) && mu !== 0) {
+            const Re = (rho * V * L) / mu;
+            reynoldsNumberText = `~${Re.toExponential(2)}`;
+        }
+
+        const turbulenceModelText = setup.turbulenceModel === 'Other' 
+            ? setup.customTurbulenceModel 
+            : setup.turbulenceModel;
+
         const prompt = `
 Analyze the convergence likelihood for the following CFD setup:
 - Geometry: ${setup.geometry}
 - Characteristic Velocity: ${setup.velocity} m/s
+- Characteristic Length: ${setup.characteristicLength} m
 - Fluid Density: ${setup.density} kg/m^3
-- Turbulence Model: ${setup.turbulenceModel}
+- Viscosity: ${setup.viscosity || 'Not specified.'} Pa·s
+- Calculated Reynolds Number: ${reynoldsNumberText}
+- Turbulence Model: ${turbulenceModelText}
 - Mesh Details: ${setup.meshDetails || 'Not specified.'}
-- Other notes: Please consider potential issues related to boundary conditions, numerical schemes, and mesh quality, even if not fully specified.
+- y+ range: ${setup.yPlus || 'Not specified.'}
+- Numerics (scheme, Courant number): ${setup.numerics || 'Not specified.'}
+- Domain extents: ${setup.domainExtents || 'Not specified.'}
+- Other notes: Please consider potential issues related to boundary conditions, numerical schemes, and mesh quality, even if not fully specified. Pay close attention to the Reynolds number to assess the flow regime.
 `;
 
         try {
@@ -69,17 +98,19 @@ Analyze the convergence likelihood for the following CFD setup:
                     />
                     <div className="relative h-full">
                         {isLoading && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-slate-800/30 rounded-xl z-10">
+                            <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-xl z-10">
                                 <Spinner />
                             </div>
                         )}
-                         {error && !isLoading && (
-                            <div className="h-full flex items-center justify-center p-4">
+                         {!isLoading && error && (
+                            <div className="h-full flex items-center justify-center p-4 animate-fade-in-up">
                                <ErrorMessage message={error} />
                             </div>
                         )}
                         {!isLoading && !error && (
-                             <OutputSection assessment={assessment} />
+                             <div className={assessment ? "h-full animate-fade-in-up" : "h-full"}>
+                                <OutputSection assessment={assessment} />
+                             </div>
                         )}
                     </div>
                 </main>
